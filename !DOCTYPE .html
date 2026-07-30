@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🌱 紙工班アプリ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #f0f4f8;
+      color: #333;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    /* ヘッダー・タイトル */
+    h1 {
+      font-size: 2.2rem;
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    .subtitle {
+      font-size: 1.5rem;
+      color: #555;
+      margin-bottom: 30px;
+    }
+
+    /* 共通ボタンデザイン */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 20px;
+      margin-bottom: 15px;
+      font-size: 1.6rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 16px;
+      background-color: #e2e8f0;
+      color: #2d3748;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* グリッドレイアウト */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    /* 画面切り替えコントロール */
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* 気分ボタン個別カラー */
+    .btn-mood-1 { background-color: #ffe0b2; color: #e65100; } /* 元気 / 楽しかった */
+    .btn-mood-2 { background-color: #e1f5fe; color: #0277bd; } /* ふつう / がんばれた */
+    .btn-mood-3 { background-color: #f3e5f5; color: #7b1fa2; } /* つかれた */
+    .btn-mood-4 { background-color: #ffebee; color: #c62828; } /* しんどい */
+
+    /* 「できた！」巨大ボタン */
+    .btn-done {
+      background-color: #4caf50;
+      color: white;
+      font-size: 2.8rem;
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+      margin-top: 20px;
+    }
+
+    /* ナビゲーションバー */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #edf2f7;
+    }
+
+    .btn-secondary {
+      width: auto;
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      background-color: #cbd5e0;
+      color: #4a5568;
+    }
+
+    /* トースト通知 */
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #2b6cb0;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast">メッセージ</div>
+
+  <div class="container">
+
+    <!-- 1. 生徒選択画面 -->
+    <div id="screen-student" class="screen active">
+      <h1>🌱 紙工班アプリ</h1>
+      <p class="subtitle">生徒を選んでください</p>
+      <div id="student-list" class="grid">
+        <!-- 生徒ボタンが動的に挿入されます -->
+        <p>生徒データを読み込み中...</p>
+      </div>
+    </div>
+
+    <!-- 2. 朝の気分画面 -->
+    <div id="screen-mood-morning" class="screen">
+      <h1 id="morning-title">おはよう！</h1>
+      <p class="subtitle">今日の気分は？</p>
+      <div class="grid">
+        <button class="btn btn-mood-1" onclick="selectMorningMood('😀 元気')">😀 元気</button>
+        <button class="btn btn-mood-2" onclick="selectMorningMood('🙂 ふつう')">🙂 ふつう</button>
+        <button class="btn btn-mood-3" onclick="selectMorningMood('😔 つかれた')">😔 つかれた</button>
+        <button class="btn btn-mood-4" onclick="selectMorningMood('😣 しんどい')">😣 しんどい</button>
+      </div>
+      <div class="nav-bar">
+        <button class="btn btn-secondary" onclick="showScreen('screen-student')">⬅ 生徒選択へもどる</button>
+      </div>
+    </div>
+
+    <!-- 3. 作業画面（できた！） -->
+    <div id="screen-work" class="screen">
+      <h1 id="work-title">今日の作業</h1>
+      <p id="work-detail" class="subtitle" style="font-weight: bold; color: #2b6cb0;"></p>
+      
+      <button class="btn btn-done" onclick="submitWorkLog()">🌟 できた！</button>
+
+      <div class="nav-bar">
+        <button class="btn btn-secondary" onclick="showScreen('screen-mood-morning')">⬅ 気分選択へ</button>
+        <button class="btn btn-secondary" style="background-color: #ed8936; color: white;" onclick="showScreen('screen-mood-evening')">帰りの気分へ ➔</button>
+      </div>
+    </div>
+
+    <!-- 4. 帰りの気分画面 -->
+    <div id="screen-mood-evening" class="screen">
+      <h1 id="evening-title">今日もおつかれさま！</h1>
+      <p class="subtitle">今日の作業はどうでしたか？</p>
+      <div class="grid">
+        <button class="btn btn-mood-1" onclick="selectEveningMood('😀 楽しかった')">😀 楽しかった</button>
+        <button class="btn btn-mood-2" onclick="selectEveningMood('🙂 がんばれた')">🙂 がんばれた</button>
+        <button class="btn btn-mood-2" onclick="selectEveningMood('😐 ふつう')">😐 ふつう</button>
+        <button class="btn btn-mood-3" onclick="selectEveningMood('😔 つかれた')">😔 つかれた</button>
+        <button class="btn btn-mood-4" onclick="selectEveningMood('😣 しんどかった')">😣 しんどかった</button>
+      </div>
+      <div class="nav-bar">
+        <button class="btn btn-secondary" onclick="showScreen('screen-work')">⬅ 作業画面へ</button>
+        <button class="btn btn-secondary" onclick="resetApp()">最初にもどる 🏠</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ★先ほど取得した Google Apps Script の Web アプリ URL に置き換えてください
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzU-5MIBEtMkiOBXmWeNtBHzz83CdzJnVegSj35SInKMEKVrgvJATwa38AGaOUlaiWdyQ/exec";
+
+    // 選択された生徒データの一時保持
+    let currentStudent = null;
+
+    // 画面初期化
+    window.onload = () => {
+      fetchStudentMaster();
+    };
+
+    // 画面切り替え表示
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // トースト通知を表示
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // 1. 生徒マスターの取得（GAS経由）
+    async function fetchStudentMaster() {
+      try {
+        const response = await fetch(GAS_API_URL);
+        const students = await response.json();
+        
+        const container = document.getElementById('student-list');
+        container.innerHTML = '';
+
+        students.forEach(student => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.innerText = student.name;
+          btn.onclick = () => selectStudent(student);
+          container.appendChild(btn);
+        });
+      } catch (error) {
+        console.error("生徒データの取得失敗:", error);
+        showToast("生徒データの読み込みに失敗しました");
+      }
+    }
+
+    // 生徒を選択したとき
+    function selectStudent(student) {
+      currentStudent = student;
+      
+      // 朝の気分画面のテキスト設定
+      document.getElementById('morning-title').innerText = `${student.name}さん、おはよう！`;
+      
+      // 作業画面のテキスト設定
+      document.getElementById('work-title').innerText = `${student.name}さんの作業`;
+      document.getElementById('work-detail').innerText = `${student.task}（${student.value}${student.unit}）`;
+      
+      // 帰りの気分画面のテキスト設定
+      document.getElementById('evening-title').innerText = `${student.name}さん、おつかれさま！`;
+
+      showScreen('screen-mood-morning');
+    }
+
+    // 2. 朝の気分を送信
+    async function selectMorningMood(mood) {
+      const now = new Date();
+      const payload = {
+        action: "saveMood",
+        studentName: currentStudent.name,
+        mood: mood,
+        date: now.toLocaleDateString('ja-JP'),
+        time: now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      sendData(payload, "朝の気分を記録しました！");
+      showScreen('screen-work');
+    }
+
+    // 3. 作業ログ（「できた！」）を送信
+    async function submitWorkLog() {
+      const now = new Date();
+      const payload = {
+        action: "saveWorkLog",
+        studentName: currentStudent.name,
+        task: currentStudent.task,
+        value: currentStudent.value,
+        unit: currentStudent.unit,
+        dateTime: now.toLocaleString('ja-JP')
+      };
+
+      sendData(payload, "🌟 できた！を記録しました");
+    }
+
+    // 4. 帰りの気分を送信
+    async function selectEveningMood(mood) {
+      const now = new Date();
+      const payload = {
+        action: "saveEndMood",
+        studentName: currentStudent.name,
+        mood: mood,
+        date: now.toLocaleDateString('ja-JP'),
+        comment: ""
+      };
+
+      sendData(payload, "帰りの気分を記録しました！");
+      setTimeout(() => {
+        resetApp();
+      }, 1500);
+    }
+
+    // 共通API送信処理
+    function sendData(payload, successMsg) {
+      fetch(GAS_API_URL, {
+        method: "POST",
+        mode: "no-cors", // CORS回避
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        showToast(successMsg);
+      })
+      .catch(error => {
+        console.error("送信エラー:", error);
+        showToast("記録に失敗しました");
+      });
+    }
+
+    // アプリリセット（最初の画面へ）
+    function resetApp() {
+      currentStudent = null;
+      showScreen('screen-student');
+    }
+  </script>
+</body>
+</html>

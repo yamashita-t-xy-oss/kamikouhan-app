@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>🌱 紙工班アプリ</title>
+  <!-- 紙吹雪用ライブラリ (Canvas Confetti) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -119,6 +121,19 @@
       box-shadow: 0 4px 10px rgba(49, 130, 206, 0.3);
     }
 
+    /* 成果カウンター表示 */
+    .count-badge {
+      display: inline-block;
+      background-color: #feebc8;
+      color: #c05621;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      border: 2px dashed #dd6b20;
+    }
+
     .btn-done {
       background-color: #4caf50;
       color: white;
@@ -214,14 +229,14 @@
       transform: translateX(-50%);
       background-color: #2b6cb0;
       color: white;
-      padding: 15px 30px;
+      padding: 18px 36px;
       border-radius: 30px;
-      font-size: 1.3rem;
+      font-size: 1.5rem;
       font-weight: bold;
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
       z-index: 3000;
     }
 
@@ -277,6 +292,8 @@
     <div id="screen-work" class="screen">
       <h1 id="work-title">今日の作業</h1>
       
+      <div id="done-counter" class="count-badge">きょうの『できた！』: 0 回 🌟</div>
+
       <p style="font-size: 1.1rem; color: #718096; margin-bottom: 8px;">▼ やる作業をえらんでね</p>
       <div id="task-selector" class="task-selector"></div>
 
@@ -312,13 +329,65 @@
   </div>
 
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxOHi9Ie-WJqNpGzWMA0Wvva-uSblF6SKSrW5QH7p-myLH1JZZbs9PJMxbKkEolVL2UJg/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxw7-YED1JMIA8iQyMmczCOwCY9Ncj1JJvJPuKJE1gTPVw1N463vjnHfplisnsFosxi6Q/exec";
 
     let currentStudent = null;
     let currentTaskIndex = 0;
-    let isSubmitting = false; // 連打防止フラグ
+    let isSubmitting = false; 
+    let todayDoneCount = 0;
 
-    // 音声読み上げ関数（「せんせい」呼び出し用）
+    // 🌟 ほめ言葉リスト（ランダムフィードバック）
+    const praiseMessages = [
+      "🌟 すごーい！かんぺき！",
+      "✨ そのちょうし！素晴らしい！",
+      "🎉 ばっちり！かっこいい！",
+      "🌈 すごい集中力！えらい！",
+      "💪 つぎもがんばろう！"
+    ];
+
+    // Web Audio APIによるファンファーレ効果音再生
+    function playFanfare() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        
+        const notes = [261.63, 329.63, 392.00, 523.25]; // ド, ミ, ソ, 高いド
+        const times = [0, 0.12, 0.24, 0.36];
+        const durations = [0.1, 0.1, 0.1, 0.4];
+
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + times[idx]);
+          
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + times[idx]);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + times[idx] + durations[idx]);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.start(ctx.currentTime + times[idx]);
+          osc.stop(ctx.currentTime + times[idx] + durations[idx]);
+        });
+      } catch (e) {
+        console.log("Audio play error:", e);
+      }
+    }
+
+    // 紙吹雪エフェクト
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    // 音声読み上げ
     function speakText(text) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -386,6 +455,7 @@
 
     function selectStudent(student) {
       currentStudent = student;
+      todayDoneCount = 0;
       
       const tasks = student.task.split(/[,、]/).map(t => t.trim());
       currentStudent.taskList = tasks;
@@ -394,6 +464,7 @@
       document.getElementById('morning-title').innerText = `${student.name}さん、おはよう！`;
       document.getElementById('work-title').innerText = `${student.name}さんの作業`;
       document.getElementById('evening-title').innerText = `${student.name}さん、おつかれさま！`;
+      document.getElementById('done-counter').innerText = `きょうの『できた！』: 0 回 🌟`;
 
       renderTaskButtons();
 
@@ -424,7 +495,7 @@
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
-    // 朝の気分 ➔ 記録後、自動で生徒選択画面に戻る
+    // 朝の気分 ➔ 自動で生徒選択に戻る
     async function selectMorningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -439,18 +510,27 @@
       };
 
       markMorningDone(currentStudent.name);
-      sendData(payload, `${currentStudent.name}さんの朝の気分を記録しました！`);
+      sendData(payload, `${currentStudent.name}さんのきぶんをきろくしたよ！`);
 
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1200);
+      }, 1500);
     }
 
-    // 🌟 できた！ ➔ 記録後、自動で生徒選択画面に戻る
+    // 🌟 できた！ ➔ 音・紙吹雪・ランダムほめ言葉 ➔ 自動で生徒選択に戻る
     async function submitWorkLog(btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
+
+      // 演出発動！
+      playFanfare();
+      triggerConfetti();
+
+      todayDoneCount++;
+      document.getElementById('done-counter').innerText = `きょうの『できた！』: ${todayDoneCount} 回 🌟`;
+
+      const randomPraise = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
 
       const now = new Date();
       const activeTask = currentStudent.taskList[currentTaskIndex];
@@ -464,12 +544,12 @@
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      sendData(payload, `🌟 ${activeTask} できた！`);
+      sendData(payload, randomPraise);
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp();
-      }, 1200);
+        resetApp(); // 自動で戻る
+      }, 1800);
     }
 
     function openBreakModal() {
@@ -480,15 +560,18 @@
       document.getElementById('break-modal').classList.remove('active');
     }
 
-    // ☕ 休憩・要望 ➔ 記録後、自動で生徒選択画面に戻る
+    // ☕ 休憩・SOS ➔ 行動自体をほめて自動で戻る
     function selectBreakOption(optionName, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
 
       closeBreakModal();
 
+      let praiseMsg = `${optionName} をおしえられてえらいね！`;
+
       if (optionName === '🙋 先生を呼ぶ') {
         speakText("せんせい");
+        praiseMsg = "がまんしないで言えてえらいね！";
       }
       
       const now = new Date();
@@ -501,15 +584,15 @@
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      sendData(payload, `${optionName} を記録しました！`);
+      sendData(payload, praiseMsg);
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp();
-      }, 1200);
+        resetApp(); // 自動で戻る
+      }, 1800);
     }
 
-    // 帰りの気分 ➔ 記録後、自動で生徒選択画面に戻る
+    // 帰りの気分 ➔ 自動で生徒選択に戻る
     async function selectEveningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -523,12 +606,12 @@
         comment: ""
       };
 
-      sendData(payload, "帰りの気分を記録しました！");
+      sendData(payload, "今日もおつかれさま！ゆっくりやすんでね！");
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp();
-      }, 1200);
+        resetApp(); // 自動で戻る
+      }, 1800);
     }
 
     function sendData(payload, successMsg) {

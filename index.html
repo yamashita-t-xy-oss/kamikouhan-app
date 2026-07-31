@@ -424,7 +424,7 @@
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
-    // 朝の気分 ➔ 記録後、自動で生徒選択に戻る
+    // 朝の気分 ➔ 記録後、自動で生徒選択画面に戻る
     async function selectMorningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -447,7 +447,7 @@
       }, 1200);
     }
 
-    // 🌟 できた！ ➔ 記録後、自動で生徒選択に戻る
+    // 🌟 できた！ ➔ 記録後、自動で生徒選択画面に戻る
     async function submitWorkLog(btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -468,7 +468,7 @@
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp(); // ★ 生徒選択画面に自動で戻る
+        resetApp();
       }, 1200);
     }
 
@@ -480,7 +480,7 @@
       document.getElementById('break-modal').classList.remove('active');
     }
 
-    // ☕ 休憩・要望 ➔ 記録後、自動で生徒選択に戻る
+    // ☕ 休憩・要望 ➔ 記録後、自動で生徒選択画面に戻る
     function selectBreakOption(optionName, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -505,11 +505,11 @@
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp(); // ★ 生徒選択画面に自動で戻る
+        resetApp();
       }, 1200);
     }
 
-    // 帰りの気分 ➔ 記録後、自動で生徒選択に戻る
+    // 帰りの気分 ➔ 記録後、自動で生徒選択画面に戻る
     async function selectEveningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -527,7 +527,7 @@
 
       setTimeout(() => {
         isSubmitting = false;
-        resetApp(); // ★ 生徒選択画面に自動で戻る
+        resetApp();
       }, 1200);
     }
 

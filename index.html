@@ -42,7 +42,7 @@
     .subtitle {
       font-size: 1.5rem;
       color: #555;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .btn {
@@ -88,14 +88,46 @@
     .btn-mood-3 { background-color: #f3e5f5; color: #7b1fa2; }
     .btn-mood-4 { background-color: #ffebee; color: #c62828; }
 
+    /* 工程選択ボタンのエリア */
+    .task-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      background-color: #edf2f7;
+      padding: 15px;
+      border-radius: 16px;
+    }
+
+    .btn-task {
+      padding: 12px 20px;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      border: 2px solid #cbd5e0;
+      background-color: white;
+      color: #4a5568;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    .btn-task.active {
+      background-color: #3182ce;
+      color: white;
+      border-color: #2b6cb0;
+      box-shadow: 0 4px 10px rgba(49, 130, 206, 0.3);
+    }
+
+    /* 「できた！」巨大ボタン */
     .btn-done {
       background-color: #4caf50;
       color: white;
       font-size: 2.8rem;
-      padding: 40px;
+      padding: 35px;
       border-radius: 24px;
       box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     .nav-bar {
@@ -170,7 +202,14 @@
     <!-- 3. 作業画面（できた！） -->
     <div id="screen-work" class="screen">
       <h1 id="work-title">今日の作業</h1>
-      <p id="work-detail" class="subtitle" style="font-weight: bold; color: #2b6cb0;"></p>
+      
+      <!-- 工程切り替え用ボタン領域 -->
+      <p style="font-size: 1.1rem; color: #718096; margin-bottom: 8px;">▼ やる作業をえらんでね</p>
+      <div id="task-selector" class="task-selector">
+        <!-- ボタンが動的に入ります -->
+      </div>
+
+      <p id="work-detail" class="subtitle" style="font-weight: bold; color: #2b6cb0; margin-bottom: 15px;"></p>
       
       <button class="btn btn-done" onclick="submitWorkLog()">🌟 できた！</button>
 
@@ -203,6 +242,7 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzU-5MIBEtMkiOBXmWeNtBHzz83CdzJnVegSj35SInKMEKVrgvJATwa38AGaOUlaiWdyQ/exec";
 
     let currentStudent = null;
+    let currentTaskIndex = 0; // 現在選択中の工程インデックス
 
     window.onload = () => {
       fetchStudentMaster();
@@ -244,12 +284,39 @@
     function selectStudent(student) {
       currentStudent = student;
       
+      // 主な作業をカンマ「,」や読点「、」で複数分割できるようにする
+      // 例: "ラミネートはがし、スタンプ押し" ➔ ["ラミネートはがし", "スタンプ押し"]
+      const tasks = student.task.split(/[,、]/).map(t => t.trim());
+      currentStudent.taskList = tasks;
+      currentTaskIndex = 0;
+
       document.getElementById('morning-title').innerText = `${student.name}さん、おはよう！`;
       document.getElementById('work-title').innerText = `${student.name}さんの作業`;
-      document.getElementById('work-detail').innerText = `${student.task}（${student.value}${student.unit}）`;
       document.getElementById('evening-title').innerText = `${student.name}さん、おつかれさま！`;
 
+      renderTaskButtons();
       showScreen('screen-mood-morning');
+    }
+
+    // 工程切り替えボタンの描画
+    function renderTaskButtons() {
+      const container = document.getElementById('task-selector');
+      container.innerHTML = '';
+
+      currentStudent.taskList.forEach((taskName, index) => {
+        const btn = document.createElement('button');
+        btn.className = `btn-task ${index === currentTaskIndex ? 'active' : ''}`;
+        btn.innerText = taskName;
+        btn.onclick = () => {
+          currentTaskIndex = index;
+          renderTaskButtons();
+        };
+        container.appendChild(btn);
+      });
+
+      // 表示を更新
+      const activeTask = currentStudent.taskList[currentTaskIndex];
+      document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
     async function selectMorningMood(mood) {
@@ -268,16 +335,18 @@
 
     async function submitWorkLog() {
       const now = new Date();
+      const activeTask = currentStudent.taskList[currentTaskIndex];
+
       const payload = {
         action: "saveWorkLog",
         studentName: currentStudent.name,
-        task: currentStudent.task,
+        task: activeTask, // 現在えらんでいる工程名を送信
         value: currentStudent.value,
         unit: currentStudent.unit,
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      sendData(payload, "🌟 できた！を記録しました");
+      sendData(payload, `🌟 ${activeTask} できた！`);
     }
 
     async function selectEveningMood(mood) {

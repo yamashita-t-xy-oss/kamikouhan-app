@@ -130,7 +130,6 @@
       margin-bottom: 15px;
     }
 
-    /* 休憩ボタン */
     .btn-rest-trigger {
       background-color: #ed8936;
       color: white;
@@ -157,7 +156,6 @@
       color: #4a5568;
     }
 
-    /* モーダルポップアップ (休憩選択) */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -240,10 +238,10 @@
   <div id="break-modal" class="modal-overlay">
     <div class="modal-content">
       <h2 class="modal-title">☕ なにをしますか？</h2>
-      <button class="btn-break-option btn-toilet" onclick="selectBreakOption('🚽 トイレ')">🚽 トイレ</button>
-      <button class="btn-break-option btn-tea" onclick="selectBreakOption('🍵 お茶')">🍵 お茶</button>
-      <button class="btn-break-option btn-walk" onclick="selectBreakOption('🚶 散歩')">🚶 散歩</button>
-      <button class="btn-break-option btn-teacher" onclick="selectBreakOption('🙋 先生を呼ぶ')">🙋 先生を呼ぶ</button>
+      <button class="btn-break-option btn-toilet" onclick="selectBreakOption('🚽 トイレ', this)">🚽 トイレ</button>
+      <button class="btn-break-option btn-tea" onclick="selectBreakOption('🍵 お茶', this)">🍵 お茶</button>
+      <button class="btn-break-option btn-walk" onclick="selectBreakOption('🚶 散歩', this)">🚶 散歩</button>
+      <button class="btn-break-option btn-teacher" onclick="selectBreakOption('🙋 先生を呼ぶ', this)">🙋 先生を呼ぶ</button>
       
       <button class="btn btn-secondary" style="margin-top: 15px; margin-bottom: 0;" onclick="closeBreakModal()">キャンセル</button>
     </div>
@@ -265,10 +263,10 @@
       <h1 id="morning-title">おはよう！</h1>
       <p class="subtitle">今日の気分は？</p>
       <div class="grid">
-        <button class="btn btn-mood-1" onclick="selectMorningMood('😀 元気')">😀 元気</button>
-        <button class="btn btn-mood-2" onclick="selectMorningMood('🙂 ふつう')">🙂 ふつう</button>
-        <button class="btn btn-mood-3" onclick="selectMorningMood('😔 つかれた')">😔 つかれた</button>
-        <button class="btn btn-mood-4" onclick="selectMorningMood('😣 しんどい')">😣 しんどい</button>
+        <button class="btn btn-mood-1" onclick="selectMorningMood('😀 元気', this)">😀 元気</button>
+        <button class="btn btn-mood-2" onclick="selectMorningMood('🙂 ふつう', this)">🙂 ふつう</button>
+        <button class="btn btn-mood-3" onclick="selectMorningMood('😔 つかれた', this)">😔 つかれた</button>
+        <button class="btn btn-mood-4" onclick="selectMorningMood('😣 しんどい', this)">😣 しんどい</button>
       </div>
       <div class="nav-bar">
         <button class="btn btn-secondary" onclick="showScreen('screen-student')">⬅ 生徒選択へもどる</button>
@@ -284,9 +282,8 @@
 
       <p id="work-detail" class="subtitle" style="font-weight: bold; color: #2b6cb0; margin-bottom: 15px;"></p>
       
-      <button class="btn btn-done" onclick="submitWorkLog()">🌟 できた！</button>
+      <button class="btn btn-done" onclick="submitWorkLog(this)">🌟 できた！</button>
 
-      <!-- 休憩ボタン -->
       <button class="btn btn-rest-trigger" onclick="openBreakModal()">☕ 休憩・たすけて</button>
 
       <div class="nav-bar">
@@ -300,11 +297,11 @@
       <h1 id="evening-title">今日もおつかれさま！</h1>
       <p class="subtitle">今日の作業はどうでしたか？</p>
       <div class="grid">
-        <button class="btn btn-mood-1" onclick="selectEveningMood('😀 楽しかった')">😀 楽しかった</button>
-        <button class="btn btn-mood-2" onclick="selectEveningMood('🙂 がんばれた')">🙂 がんばれた</button>
-        <button class="btn btn-mood-2" onclick="selectEveningMood('😐 ふつう')">😐 ふつう</button>
-        <button class="btn btn-mood-3" onclick="selectEveningMood('😔 つかれた')">😔 つかれた</button>
-        <button class="btn btn-mood-4" onclick="selectEveningMood('😣 しんどかった')">😣 しんどかった</button>
+        <button class="btn btn-mood-1" onclick="selectEveningMood('😀 楽しかった', this)">😀 楽しかった</button>
+        <button class="btn btn-mood-2" onclick="selectEveningMood('🙂 がんばれた', this)">🙂 がんばれた</button>
+        <button class="btn btn-mood-2" onclick="selectEveningMood('😐 ふつう', this)">😐 ふつう</button>
+        <button class="btn btn-mood-3" onclick="selectEveningMood('😔 つかれた', this)">😔 つかれた</button>
+        <button class="btn btn-mood-4" onclick="selectEveningMood('😣 しんどかった', this)">😣 しんどかった</button>
       </div>
       <div class="nav-bar">
         <button class="btn btn-secondary" onclick="showScreen('screen-work')">⬅ 作業画面へ</button>
@@ -315,9 +312,26 @@
   </div>
 
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxw7-YEDlJMIA8iQyMmczCOwCY9NcjlJJvJPuKJElgTPVwlN463vjnHfplisnsFosxi6Q/exec"
+    // ★注意：下の引用符（""）の中に、ご自身の最新のWebアプリURL（https://script.google.com/macros/s/.../exec）を入れてください！
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwTnPBl9jDFrNIbqrZbcjJ15uK6WjHCDuhnqRVEBTZz/dev";
+
     let currentStudent = null;
     let currentTaskIndex = 0;
+    let isSubmitting = false; // 連打防止フラグ
+
+    // ==========================================
+    // 音声をしゃべらせる関数（「せんせい」呼び出し用）
+    // ==========================================
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 連続で鳴らないように前の音声をクリア
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';  // 日本語
+        uttr.rate = 1.0;      // 速度
+        uttr.pitch = 1.2;     // 少し高めの声
+        window.speechSynthesis.speak(uttr);
+      }
+    }
 
     function getTodayKey() {
       return "morning_done_" + new Date().toLocaleDateString('ja-JP');
@@ -413,7 +427,10 @@
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
-    async function selectMorningMood(mood) {
+    async function selectMorningMood(mood, btnElement) {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
       const now = new Date();
       const payload = {
         action: "saveMood",
@@ -427,11 +444,15 @@
       sendData(payload, `${currentStudent.name}さんの朝の気分を記録しました！`);
 
       setTimeout(() => {
+        isSubmitting = false;
         resetApp();
       }, 1000);
     }
 
-    async function submitWorkLog() {
+    async function submitWorkLog(btnElement) {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
       const now = new Date();
       const activeTask = currentStudent.taskList[currentTaskIndex];
 
@@ -445,9 +466,12 @@
       };
 
       sendData(payload, `🌟 ${activeTask} できた！`);
+
+      setTimeout(() => {
+        isSubmitting = false;
+      }, 1500);
     }
 
-    /* 休憩モーダルの操作 */
     function openBreakModal() {
       document.getElementById('break-modal').classList.add('active');
     }
@@ -456,8 +480,16 @@
       document.getElementById('break-modal').classList.remove('active');
     }
 
-    function selectBreakOption(optionName) {
+    function selectBreakOption(optionName, btnElement) {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
       closeBreakModal();
+
+      // ★ 先生を呼ぶを押した時は「せんせい」と喋る
+      if (optionName === '🙋 先生を呼ぶ') {
+        speakText("せんせい");
+      }
       
       const now = new Date();
       const payload = {
@@ -469,11 +501,17 @@
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      // スプレッドシートにもログとして送信
       sendData(payload, `${optionName} を記録しました！`);
+
+      setTimeout(() => {
+        isSubmitting = false;
+      }, 1500);
     }
 
-    async function selectEveningMood(mood) {
+    async function selectEveningMood(mood, btnElement) {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
       const now = new Date();
       const payload = {
         action: "saveEndMood",
@@ -485,6 +523,7 @@
 
       sendData(payload, "帰りの気分を記録しました！");
       setTimeout(() => {
+        isSubmitting = false;
         resetApp();
       }, 1500);
     }

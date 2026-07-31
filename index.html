@@ -88,7 +88,6 @@
     .btn-mood-3 { background-color: #f3e5f5; color: #7b1fa2; }
     .btn-mood-4 { background-color: #ffebee; color: #c62828; }
 
-    /* 工程選択ボタンのエリア */
     .task-selector {
       display: flex;
       flex-wrap: wrap;
@@ -119,7 +118,6 @@
       box-shadow: 0 4px 10px rgba(49, 130, 206, 0.3);
     }
 
-    /* 「できた！」巨大ボタン */
     .btn-done {
       background-color: #4caf50;
       color: white;
@@ -203,18 +201,15 @@
     <div id="screen-work" class="screen">
       <h1 id="work-title">今日の作業</h1>
       
-      <!-- 工程切り替え用ボタン領域 -->
       <p style="font-size: 1.1rem; color: #718096; margin-bottom: 8px;">▼ やる作業をえらんでね</p>
-      <div id="task-selector" class="task-selector">
-        <!-- ボタンが動的に入ります -->
-      </div>
+      <div id="task-selector" class="task-selector"></div>
 
       <p id="work-detail" class="subtitle" style="font-weight: bold; color: #2b6cb0; margin-bottom: 15px;"></p>
       
       <button class="btn btn-done" onclick="submitWorkLog()">🌟 できた！</button>
 
       <div class="nav-bar">
-        <button class="btn btn-secondary" onclick="showScreen('screen-mood-morning')">⬅ 気分選択へ</button>
+        <button class="btn btn-secondary" onclick="resetApp()">⬅ 生徒選択へもどる</button>
         <button class="btn btn-secondary" style="background-color: #ed8936; color: white;" onclick="showScreen('screen-mood-evening')">帰りの気分へ ➔</button>
       </div>
     </div>
@@ -242,7 +237,25 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzU-5MIBEtMkiOBXmWeNtBHzz83CdzJnVegSj35SInKMEKVrgvJATwa38AGaOUlaiWdyQ/exec";
 
     let currentStudent = null;
-    let currentTaskIndex = 0; // 現在選択中の工程インデックス
+    let currentTaskIndex = 0;
+
+    // 「本日朝の気分を入力した生徒」をiPad内に記録しておくローカルメモリ
+    function getTodayKey() {
+      return "morning_done_" + new Date().toLocaleDateString('ja-JP');
+    }
+
+    function getMorningDoneList() {
+      const data = localStorage.getItem(getTodayKey());
+      return data ? JSON.parse(data) : [];
+    }
+
+    function markMorningDone(studentName) {
+      const list = getMorningDoneList();
+      if (!list.includes(studentName)) {
+        list.push(studentName);
+        localStorage.setItem(getTodayKey(), JSON.stringify(list));
+      }
+    }
 
     window.onload = () => {
       fetchStudentMaster();
@@ -281,11 +294,10 @@
       }
     }
 
+    // 生徒選択時
     function selectStudent(student) {
       currentStudent = student;
       
-      // 主な作業をカンマ「,」や読点「、」で複数分割できるようにする
-      // 例: "ラミネートはがし、スタンプ押し" ➔ ["ラミネートはがし", "スタンプ押し"]
       const tasks = student.task.split(/[,、]/).map(t => t.trim());
       currentStudent.taskList = tasks;
       currentTaskIndex = 0;
@@ -295,10 +307,18 @@
       document.getElementById('evening-title').innerText = `${student.name}さん、おつかれさま！`;
 
       renderTaskButtons();
-      showScreen('screen-mood-morning');
+
+      // 本日すでに朝の気分を入力済みか判定
+      const morningDoneList = getMorningDoneList();
+      if (morningDoneList.includes(student.name)) {
+        // 2度目の選択 ➔ 作業画面へスキップ！
+        showScreen('screen-work');
+      } else {
+        // 1度目の選択 ➔ 朝の気分画面へ
+        showScreen('screen-mood-morning');
+      }
     }
 
-    // 工程切り替えボタンの描画
     function renderTaskButtons() {
       const container = document.getElementById('task-selector');
       container.innerHTML = '';
@@ -314,11 +334,11 @@
         container.appendChild(btn);
       });
 
-      // 表示を更新
       const activeTask = currentStudent.taskList[currentTaskIndex];
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
+    // 朝の気分を選択したとき
     async function selectMorningMood(mood) {
       const now = new Date();
       const payload = {
@@ -329,8 +349,15 @@
         time: now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
       };
 
-      sendData(payload, "朝の気分を記録しました！");
-      showScreen('screen-work');
+      // 入力済みフラグを記録
+      markMorningDone(currentStudent.name);
+
+      sendData(payload, `${currentStudent.name}さんの朝の気分を記録しました！`);
+
+      // 朝の気分を押したら「生徒選択画面」に自動で戻る
+      setTimeout(() => {
+        resetApp();
+      }, 1000);
     }
 
     async function submitWorkLog() {
@@ -340,7 +367,7 @@
       const payload = {
         action: "saveWorkLog",
         studentName: currentStudent.name,
-        task: activeTask, // 現在えらんでいる工程名を送信
+        task: activeTask,
         value: currentStudent.value,
         unit: currentStudent.unit,
         dateTime: now.toLocaleString('ja-JP')

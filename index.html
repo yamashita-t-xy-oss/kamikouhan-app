@@ -312,23 +312,20 @@
   </div>
 
   <script>
-    // ★注意：下の引用符（""）の中に、ご自身の最新のWebアプリURL（https://script.google.com/macros/s/.../exec）を入れてください！
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxw7-YEDlJMIA8iQyMmczCOwCY9NcjlJJvJPuKJElgTPVwlN463vjnHfplisnsFosxi6Q/exec"
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxw7-YED1JMIA8iQyMmczCOwCY9Ncj1JJvJPuKJE1gTPVw1N463vjnHfplisnsFosxi6Q/exec";
 
     let currentStudent = null;
     let currentTaskIndex = 0;
     let isSubmitting = false; // 連打防止フラグ
 
-    // ==========================================
-    // 音声をしゃべらせる関数（「せんせい」呼び出し用）
-    // ==========================================
+    // 音声読み上げ関数（「せんせい」呼び出し用）
     function speakText(text) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // 連続で鳴らないように前の音声をクリア
+        window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
-        uttr.lang = 'ja-JP';  // 日本語
-        uttr.rate = 1.0;      // 速度
-        uttr.pitch = 1.2;     // 少し高めの声
+        uttr.lang = 'ja-JP';
+        uttr.rate = 1.0;
+        uttr.pitch = 1.2;
         window.speechSynthesis.speak(uttr);
       }
     }
@@ -427,6 +424,7 @@
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
+    // 朝の気分 ➔ 記録後、自動で生徒選択に戻る
     async function selectMorningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -446,9 +444,10 @@
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1000);
+      }, 1200);
     }
 
+    // 🌟 できた！ ➔ 記録後、自動で生徒選択に戻る
     async function submitWorkLog(btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -469,7 +468,8 @@
 
       setTimeout(() => {
         isSubmitting = false;
-      }, 1500);
+        resetApp(); // ★ 生徒選択画面に自動で戻る
+      }, 1200);
     }
 
     function openBreakModal() {
@@ -480,13 +480,13 @@
       document.getElementById('break-modal').classList.remove('active');
     }
 
+    // ☕ 休憩・要望 ➔ 記録後、自動で生徒選択に戻る
     function selectBreakOption(optionName, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
 
       closeBreakModal();
 
-      // ★ 先生を呼ぶを押した時は「せんせい」と喋る
       if (optionName === '🙋 先生を呼ぶ') {
         speakText("せんせい");
       }
@@ -505,9 +505,11 @@
 
       setTimeout(() => {
         isSubmitting = false;
-      }, 1500);
+        resetApp(); // ★ 生徒選択画面に自動で戻る
+      }, 1200);
     }
 
+    // 帰りの気分 ➔ 記録後、自動で生徒選択に戻る
     async function selectEveningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -522,10 +524,11 @@
       };
 
       sendData(payload, "帰りの気分を記録しました！");
+
       setTimeout(() => {
         isSubmitting = false;
-        resetApp();
-      }, 1500);
+        resetApp(); // ★ 生徒選択画面に自動で戻る
+      }, 1200);
     }
 
     function sendData(payload, successMsg) {

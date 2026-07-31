@@ -39,13 +39,26 @@
     h1 {
       font-size: 2.2rem;
       color: #2c3e50;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .subtitle {
       font-size: 1.5rem;
       color: #555;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+    }
+
+    /* 前日の頑張り・気遣いカード */
+    .praise-card {
+      background-color: #ebf8ff;
+      border: 2px solid #90cdf4;
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #2b6cb0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      line-height: 1.5;
     }
 
     .btn {
@@ -230,13 +243,15 @@
       color: white;
       padding: 18px 36px;
       border-radius: 30px;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: bold;
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
       box-shadow: 0 6px 18px rgba(0,0,0,0.2);
       z-index: 3000;
+      width: 90%;
+      max-width: 600px;
     }
 
     #toast.show {
@@ -275,6 +290,7 @@
     <!-- 2. 朝の気分画面 -->
     <div id="screen-mood-morning" class="screen">
       <h1 id="morning-title">おはよう！</h1>
+      <div id="praise-card" class="praise-card" style="display: none;"></div>
       <p class="subtitle">今日の気分は？</p>
       <div class="grid">
         <button class="btn btn-mood-1" onclick="selectMorningMood('😀 元気', this)">😀 元気</button>
@@ -328,7 +344,6 @@
   </div>
 
   <script>
-    // ★ 最新のGAS URLを設定済み
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxOHi9Ie-WJqNpGzWMA0Wvva-uSblF6SKSrW5QH7p-myLH1JZZbs9PJMxbKkEolVL2UJg/exec";
 
     let currentStudent = null;
@@ -337,11 +352,11 @@
     let todayDoneCount = 0;
 
     const praiseMessages = [
-      "🌟 すごーい！かんぺき！",
-      "✨ そのちょうし！素晴らしい！",
-      "🎉 ばっちり！かっこいい！",
-      "🌈 すごい集中力！えらい！",
-      "💪 つぎもがんばろう！"
+      "すごーい！かんぺき！",
+      "そのちょうし！素晴らしいよ！",
+      "ばっちり！かっこいい！",
+      "すごい集中力！えらい！",
+      "よくがんばったね！つぎも応援してるよ！"
     ];
 
     function playFanfare() {
@@ -370,7 +385,7 @@
           osc.stop(ctx.currentTime + times[idx] + durations[idx]);
         });
       } catch (e) {
-        console.log("Audio play error:", e);
+        console.log("Audio error:", e);
       }
     }
 
@@ -389,8 +404,8 @@
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate = 1.0;
-        uttr.pitch = 1.2;
+        uttr.rate = 0.92; // より優しくハッキリ
+        uttr.pitch = 1.15;
         window.speechSynthesis.speak(uttr);
       }
     }
@@ -412,6 +427,16 @@
       }
     }
 
+    function saveLastDoneCount(studentName, count) {
+      if (count > 0) {
+        localStorage.setItem("last_count_" + studentName, count);
+      }
+    }
+
+    function getLastDoneCount(studentName) {
+      return localStorage.getItem("last_count_" + studentName) || 0;
+    }
+
     window.onload = () => {
       fetchStudentMaster();
     };
@@ -421,11 +446,15 @@
       document.getElementById(screenId).classList.add('active');
     }
 
-    function showToast(message) {
+    function showToastAndSpeak(message, speakMsg = null, duration = 3200) {
       const toast = document.getElementById('toast');
       toast.innerText = message;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
+      
+      const speechText = speakMsg || message.replace(/[🌟✨🎉🌈💪😀🙂😔😣🚽🍵🚶🙋]/g, '');
+      speakText(speechText);
+
+      setTimeout(() => toast.classList.remove('show'), duration);
     }
 
     async function fetchStudentMaster() {
@@ -445,7 +474,7 @@
         });
       } catch (error) {
         console.error("生徒データの取得失敗:", error);
-        showToast("生徒データの読み込みに失敗しました");
+        showToastAndSpeak("生徒データの読み込みに失敗しました");
       }
     }
 
@@ -462,13 +491,29 @@
       document.getElementById('evening-title').innerText = `${student.name}さん、おつかれさま！`;
       document.getElementById('done-counter').innerText = `きょうの『できた！』: 0 回 🌟`;
 
+      const lastCount = getLastDoneCount(student.name);
+      const praiseCard = document.getElementById('praise-card');
+      
+      if (lastCount > 0) {
+        praiseCard.style.display = "block";
+        praiseCard.innerText = `前回は ${lastCount} 回も作業ができたね！素晴らしい！今日も応援しているよ！`;
+      } else {
+        praiseCard.style.display = "none";
+      }
+
       renderTaskButtons();
 
       const morningDoneList = getMorningDoneList();
       if (morningDoneList.includes(student.name)) {
         showScreen('screen-work');
+        speakText(`${student.name}さん、今日も作業をがんばろうね！`);
       } else {
         showScreen('screen-mood-morning');
+        let morningVoice = `${student.name}さん、おはよう！今日の気分はどうかな？`;
+        if (lastCount > 0) {
+          morningVoice = `${student.name}さん、おはよう！前回は${lastCount}回もできたね！今日も応援してるよ！`;
+        }
+        speakText(morningVoice);
       }
     }
 
@@ -491,9 +536,24 @@
       document.getElementById('work-detail').innerText = `${activeTask}（${currentStudent.value}${currentStudent.unit}）`;
     }
 
+    // 朝の気分選択
     async function selectMorningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
+
+      let toastMessage = "きぶんをきろくしたよ！";
+      let voiceMessage = "きぶんをきろくしたよ！今日もよろしくね！";
+
+      if (mood.includes('元気')) {
+        toastMessage = "元気いっぱいだね！その調子！";
+        voiceMessage = "元気いっぱいだね！今日も楽しくがんばろう！";
+      } else if (mood.includes('ふつう')) {
+        toastMessage = "自分のペースで進めようね！";
+        voiceMessage = "自分のペースで、ゆっくり進めようね！";
+      } else if (mood.includes('つかれた') || mood.includes('しんどい')) {
+        toastMessage = "無理しないで、やすみやすみやろうね！";
+        voiceMessage = "無理しないでね。今日は休み休み、少しずつ進めようね！";
+      }
 
       const now = new Date();
       const payload = {
@@ -505,14 +565,17 @@
       };
 
       markMorningDone(currentStudent.name);
-      sendData(payload, `${currentStudent.name}さんのきぶんをきろくしたよ！`);
+      sendData(payload);
+
+      showToastAndSpeak(toastMessage, voiceMessage, 3000);
 
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1500);
+      }, 3000);
     }
 
+    // 🌟 できた！
     async function submitWorkLog(btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -522,6 +585,7 @@
 
       todayDoneCount++;
       document.getElementById('done-counter').innerText = `きょうの『できた！』: ${todayDoneCount} 回 🌟`;
+      saveLastDoneCount(currentStudent.name, todayDoneCount);
 
       const randomPraise = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
 
@@ -537,12 +601,14 @@
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      sendData(payload, randomPraise);
+      sendData(payload);
+
+      showToastAndSpeak(`🌟 ${randomPraise}`, randomPraise, 2800);
 
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1800);
+      }, 2800);
     }
 
     function openBreakModal() {
@@ -553,17 +619,29 @@
       document.getElementById('break-modal').classList.remove('active');
     }
 
+    // ☕ 休憩・SOS ➔ 行動のナビゲーション（具体的な伝え方の声をかける）
     function selectBreakOption(optionName, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
 
       closeBreakModal();
 
-      let praiseMsg = `${optionName} をおしえられてえらいね！`;
+      let praiseMsg = "";
+      let voiceMsg = "";
 
-      if (optionName === '🙋 先生を呼ぶ') {
-        speakText("せんせい");
-        praiseMsg = "がまんしないで言えてえらいね！";
+      if (optionName.includes('トイレ')) {
+        praiseMsg = "🚽 先生に「トイレに行ってきます」と言ってから行こうね！";
+        voiceMsg = "先生に、トイレに行ってきます、と言ってから行こうね！";
+      } else if (optionName.includes('お茶')) {
+        praiseMsg = "🍵 先生に「お茶を飲みます」と言ってから飲もうね！";
+        voiceMsg = "先生に、お茶を飲みます、と言ってから飲もうね！";
+      } else if (optionName.includes('散歩')) {
+        praiseMsg = "🚶 先生に「散歩に行ってきます」と言ってから行こうね！";
+        voiceMsg = "先生に、散歩に行ってきます、と言ってから行こうね！";
+      } else if (optionName.includes('先生を呼ぶ')) {
+        praiseMsg = "🙋 「せんせい」と呼べたね！先生が来るまで待ってね！";
+        voiceMsg = "せんせい！呼べたね、えらいよ！先生が来るまでちょっと待ってね！";
+        speakText("せんせい"); // まず「せんせい」と発声
       }
       
       const now = new Date();
@@ -576,14 +654,24 @@
         dateTime: now.toLocaleString('ja-JP')
       };
 
-      sendData(payload, praiseMsg);
+      sendData(payload);
+
+      // 「せんせい」呼び出しのときは少し遅らせてナビ音声を入れる
+      if (optionName.includes('先生を呼ぶ')) {
+        setTimeout(() => {
+          showToastAndSpeak(praiseMsg, voiceMsg, 3500);
+        }, 1200);
+      } else {
+        showToastAndSpeak(praiseMsg, voiceMsg, 3500);
+      }
 
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1800);
+      }, 4000); // 声をしっかり聞き取れるよう4秒待機
     }
 
+    // 帰りの気分 ➔ 片付け・帰宅への行動促し
     async function selectEveningMood(mood, btnElement) {
       if (isSubmitting) return;
       isSubmitting = true;
@@ -597,27 +685,28 @@
         comment: ""
       };
 
-      sendData(payload, "今日もおつかれさま！ゆっくりやすんでね！");
+      sendData(payload);
+
+      const toastMsg = "今日もおつかれさま！片付けをして気をつけて帰ろうね！";
+      const voiceMsg = `${currentStudent.name}さん、今日もおつかれさま！よく頑張ったね！片付けをして、気をつけて帰ろうね！`;
+
+      showToastAndSpeak(toastMsg, voiceMsg, 3500);
 
       setTimeout(() => {
         isSubmitting = false;
         resetApp();
-      }, 1800);
+      }, 3800);
     }
 
-    function sendData(payload, successMsg) {
+    function sendData(payload) {
       fetch(GAS_API_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        showToast(successMsg);
-      })
       .catch(error => {
         console.error("送信エラー:", error);
-        showToast("記録に失敗しました");
       });
     }
 
